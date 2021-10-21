@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import Searchbar from './components/Searchbar/Searchbar';
 import PixabayFetch from './components/utils/PixabayFetch';
 import ImageGallery from './components/ImageGallery/ImageGallery';
@@ -10,66 +10,60 @@ import './styles.css';
 
 const newPixabayFetch = new PixabayFetch();
 
-export default class App extends Component {
-  state = {
-    search: '',
-    page: 1,
-    responseData: [],
-    status: 'init',
-    modalIsOpen: false,
-    largeImg: '',
-  };
+export default function App() {
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [responseData, setResponseData] = useState([]);
+  const [status, setStatus] = useState('init');
+  const [modalIsOpen, setModalIsOpen] = useState(false);
+  const [largeImg, setLargeImg] = useState('');
 
-  componentDidUpdate(prevProps, prevState) {
-    if (prevState.search !== this.state.search) {
-      window.scrollTo({
-        top: document.documentElement,
-        behavior: 'smooth',
-      });
-      newPixabayFetch.resetPage();
-      this.setState({ status: 'pending', page: 1 });
-
-      newPixabayFetch.searchQuery = this.state.search;
-      newPixabayFetch
-        .searchPhotos()
-        .then(res => {
-          if (res.data.hits.length !== 0) {
-            this.setState({ responseData: [...res.data.hits] });
-          } else alert('Nothing to show! Change your search query');
-        })
-        .then(
-          this.setState(prevState => ({
-            page: prevState.page + 1,
-          })),
-        )
-        .finally(() => {
-          this.setState({ status: 'success' });
-        });
+  useEffect(() => {
+    if (search === '') {
+      return;
     }
-  }
 
-  onSearchFormSubmit = search => {
-    this.setState({ search });
-  };
-  onClick = value => {
-    // newPixabayFetch.resetPage();
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-      status: 'pending',
-    }));
-    newPixabayFetch.searchPage = this.state.page;
+    window.scrollTo({
+      top: document.documentElement,
+      behavior: 'smooth',
+    });
+    newPixabayFetch.resetPage();
+    setStatus('pending');
+    setPage(1);
+
+    newPixabayFetch.searchQuery = search;
     newPixabayFetch
       .searchPhotos()
       .then(res => {
-        this.setState(prevState => ({
-          responseData: [...prevState.responseData, ...res.data.hits],
-        }));
+        if (res.data.hits.length !== 0) {
+          setResponseData([...res.data.hits]);
+        } else alert('Nothing to show! Change your search query');
+      })
+      .then(setPage(p => p + 1))
+      .finally(() => {
+        setStatus('success');
+      });
+  }, [search]);
+
+  const onSearchFormSubmit = search => {
+    setSearch(search);
+  };
+
+  const onClick = value => {
+    setStatus('pending');
+    setPage(page + 1);
+
+    newPixabayFetch.searchPage = page;
+    newPixabayFetch
+      .searchPhotos()
+      .then(res => {
+        setResponseData(prevState => [...prevState, ...res.data.hits]);
       })
       .catch(err => {
         console.log(err);
       })
       .finally(() => {
-        this.setState({ status: 'success' });
+        setStatus('success');
         window.scrollTo({
           top: document.documentElement.scrollHeight - 1200,
           behavior: 'smooth',
@@ -77,53 +71,157 @@ export default class App extends Component {
       });
   };
 
-  onModalOpen = e => {
-    const found = this.state.responseData.find(
-      el => el.id.toString() === e.target.id,
-    );
+  const onModalOpen = e => {
+    const found = responseData.find(el => el.id.toString() === e.target.id);
 
-    this.setState(prevState => ({
-      modalIsOpen: !prevState.modalIsOpen,
-      largeImg: found.largeImageURL,
-    }));
+    setModalIsOpen(!modalIsOpen);
+    setLargeImg(found.largeImageURL);
   };
 
-  onModalClose = e => {
+  const onModalClose = e => {
     if (
       e.target.className === 'Overlay' &&
       e.currentTarget.className === 'Overlay'
     ) {
-      this.setState(prevState => ({
-        modalIsOpen: !prevState.modalIsOpen,
-      }));
+      setModalIsOpen(!modalIsOpen);
     }
   };
 
-  onModalCloseByEsc = () => {
-    this.setState({ modalIsOpen: false });
+  const onModalCloseByEsc = () => {
+    setModalIsOpen(false);
   };
 
-  render() {
-    return (
-      <>
-        <Searchbar onSubmit={this.onSearchFormSubmit} />
-        <ImageGallery
-          images={this.state.responseData}
-          onModalOpen={this.onModalOpen}
+  return (
+    <>
+      <Searchbar onSubmit={onSearchFormSubmit} />
+      <ImageGallery images={responseData} onModalOpen={onModalOpen} />
+      {status === 'pending' && <Loader />}
+      {responseData.length > 0 && <Button onClick={onClick} />}
+      {modalIsOpen && (
+        <Modal
+          onModalOpen={onModalOpen}
+          onModalClose={onModalClose}
+          onModalCloseByEsc={onModalCloseByEsc}
+          largeImg={largeImg}
         />
-        {this.state.status === 'pending' && <Loader />}
-        {this.state.responseData.length > 0 && (
-          <Button onClick={this.onClick} />
-        )}
-        {this.state.modalIsOpen && (
-          <Modal
-            onModalOpen={this.onModalOpen}
-            onModalClose={this.onModalClose}
-            onModalCloseByEsc={this.onModalCloseByEsc}
-            largeImg={this.state.largeImg}
-          />
-        )}
-      </>
-    );
-  }
+      )}
+    </>
+  );
 }
+
+// class oldApp {
+//   state = {
+//     search: '',
+//     page: 1,
+//     responseData: [],
+//     status: 'init',
+//     modalIsOpen: false,
+//     largeImg: '',
+//   };
+
+//   componentDidUpdate(prevProps, prevState) {
+//     if (prevState.search !== this.state.search) {
+//       window.scrollTo({
+//         top: document.documentElement,
+//         behavior: 'smooth',
+//       });
+//       newPixabayFetch.resetPage();
+//       this.setState({ status: 'pending', page: 1 });
+
+//       newPixabayFetch.searchQuery = this.state.search;
+//       newPixabayFetch
+//         .searchPhotos()
+//         .then(res => {
+//           if (res.data.hits.length !== 0) {
+//             this.setState({ responseData: [...res.data.hits] });
+//           } else alert('Nothing to show! Change your search query');
+//         })
+//         .then(
+//           this.setState(prevState => ({
+//             page: prevState.page + 1,
+//           })),
+//         )
+//         .finally(() => {
+//           this.setState({ status: 'success' });
+//         });
+//     }
+//   }
+
+//   onSearchFormSubmit = search => {
+//     this.setState({ search });
+//   };
+//   onClick = value => {
+//     this.setState(prevState => ({
+//       page: prevState.page + 1,
+//       status: 'pending',
+//     }));
+//     newPixabayFetch.searchPage = this.state.page;
+//     newPixabayFetch
+//       .searchPhotos()
+//       .then(res => {
+//         this.setState(prevState => ({
+//           responseData: [...prevState.responseData, ...res.data.hits],
+//         }));
+//       })
+//       .catch(err => {
+//         console.log(err);
+//       })
+//       .finally(() => {
+//         this.setState({ status: 'success' });
+//         window.scrollTo({
+//           top: document.documentElement.scrollHeight - 1200,
+//           behavior: 'smooth',
+//         });
+//       });
+//   };
+
+//   onModalOpen = e => {
+//     const found = this.state.responseData.find(
+//       el => el.id.toString() === e.target.id,
+//     );
+
+//     this.setState(prevState => ({
+//       modalIsOpen: !prevState.modalIsOpen,
+//       largeImg: found.largeImageURL,
+//     }));
+//   };
+
+//   onModalClose = e => {
+//     if (
+//       e.target.className === 'Overlay' &&
+//       e.currentTarget.className === 'Overlay'
+//     ) {
+//       this.setState(prevState => ({
+//         modalIsOpen: !prevState.modalIsOpen,
+//       }));
+//     }
+//   };
+
+//   onModalCloseByEsc = () => {
+//     this.setState({ modalIsOpen: false });
+//   };
+
+//   render() {
+//     return (
+//       <>
+//         <Searchbar onSubmit={this.onSearchFormSubmit} />
+//         <ImageGallery
+//           images={this.state.responseData}
+//           onModalOpen={this.onModalOpen}
+//         />
+//         {this.state.status === 'pending' && <Loader />}
+//         {this.state.responseData.length > 0 && (
+//           <Button onClick={this.onClick} />
+//         )}
+//         {this.state.modalIsOpen && (
+//           <Modal
+//             onModalOpen={this.onModalOpen}
+//             onModalClose={this.onModalClose}
+//             onModalCloseByEsc={this.onModalCloseByEsc}
+//             largeImg={this.state.largeImg}
+//           />
+//         )}
+//       </>
+//     );
+//   }
+// }
