@@ -99,7 +99,6 @@ export default function App() {
       {responseData.length > 0 && <Button onClick={onClick} />}
       {modalIsOpen && (
         <Modal
-          onModalOpen={onModalOpen}
           onModalClose={onModalClose}
           onModalCloseByEsc={onModalCloseByEsc}
           largeImg={largeImg}

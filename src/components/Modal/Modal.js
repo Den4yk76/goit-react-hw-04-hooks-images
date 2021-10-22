@@ -1,32 +1,31 @@
-import { Component } from 'react';
+import { useEffect } from 'react';
 import PropTypes from 'prop-types';
 
-export default class Modal extends Component {
-  componentDidMount() {
+export default function Modal({
+  onModalCloseByEsc,
+  onModalClose,
+  onKeyDown,
+  largeImg,
+}) {
+  useEffect(() => {
+    console.log('addEventListener');
     document.addEventListener('keyup', e => {
       if (e.keyCode === 27) {
-        this.props.onModalCloseByEsc();
+        onModalCloseByEsc();
       }
     });
-  }
+  });
 
-  render() {
-    return (
-      <div
-        onClick={this.props.onModalClose}
-        onKeyDown={this.props.onKeyDown}
-        className="Overlay"
-      >
-        <div className="Modal">
-          <img className="LargeGalleryImage" src={this.props.largeImg} alt="" />
-        </div>
+  return (
+    <div onClick={onModalClose} onKeyDown={onKeyDown} className="Overlay">
+      <div className="Modal">
+        <img className="LargeGalleryImage" src={largeImg} alt="" />
       </div>
-    );
-  }
+    </div>
+  );
 }
 
 Modal.propTypes = {
-  onModalOpen: PropTypes.func,
   onModalClose: PropTypes.func,
   onModalCloseByEsc: PropTypes.func,
   largeImg: PropTypes.string,
